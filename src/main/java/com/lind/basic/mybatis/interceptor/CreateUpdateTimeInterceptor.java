@@ -1,6 +1,8 @@
-package com.lind.basic.mybatis.entity;
+package com.lind.basic.mybatis.interceptor;
 
 import com.baomidou.mybatisplus.extension.handlers.AbstractSqlParserHandler;
+import com.lind.basic.mybatis.entity.CreatedOnFuncation;
+import com.lind.basic.mybatis.entity.UpdatedOnFuncation;
 import java.lang.reflect.Field;
 import java.sql.Timestamp;
 import java.util.Map;

@@ -80,5 +80,6 @@ public class MybatisTest {
     UserInfo userInfoLatest = userInfoMapper.selectOne(
         new QueryWrapper<UserInfo>().lambda().eq(UserInfo::getName, "zzl"));
     Assert.assertEquals("modify_zzl@sina.com", userInfoLatest.getEmail());
+    System.out.println(userInfoLatest.toString());
   }
 }
