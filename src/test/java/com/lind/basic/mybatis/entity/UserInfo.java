@@ -1,6 +1,5 @@
-package com.lind.basic.mybatis;
+package com.lind.basic.mybatis.entity;
 
-import com.lind.basic.mybatis.entity.EntityBase;
 import java.sql.Timestamp;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -15,15 +14,16 @@ import lombok.ToString;
 public class UserInfo extends EntityBase {
   private String name;
   private String email;
-
   /**
-   * init.
+   * 目前没有找到mybatis支持复合字段的方法.
    */
+  private Address address;
+
   @Builder(toBuilder = true)
-  public UserInfo(Integer isDelete, Long id, Timestamp createdOn,
-                  Timestamp updatedOn, String name, String email) {
+  public UserInfo(Integer isDelete, Long id, Timestamp createdOn, Timestamp updatedOn, String name, String email, Address address) {
     super(isDelete, id, createdOn, updatedOn);
     this.name = name;
     this.email = email;
+    this.address = address;
   }
 }

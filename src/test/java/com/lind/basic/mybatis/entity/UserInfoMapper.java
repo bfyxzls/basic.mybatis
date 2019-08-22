@@ -1,4 +1,4 @@
-package com.lind.basic.mybatis;
+package com.lind.basic.mybatis.entity;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 
