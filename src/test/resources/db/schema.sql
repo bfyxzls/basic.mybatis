@@ -6,6 +6,12 @@ CREATE TABLE `user_info` (
    `created_on`   TIMESTAMP NULL COMMENT '建立时间',
    `updated_on` TIMESTAMP   NULL COMMENT '更新时间',
     `is_delete` int(1)   NULL COMMENT '是否删除',
+ `city_name` varchar(30)   NULL COMMENT '姓名',
+  `province_name` varchar(30)   NULL COMMENT '姓名',
+   `district_name` varchar(30)   NULL COMMENT '姓名',
+       `city_code` int(10)   NULL COMMENT '是否删除',
+    `province_code` int(10)   NULL COMMENT '是否删除',
+    `district_code` int(10)   NULL COMMENT '是否删除',
 
   PRIMARY KEY (`id`)
 )  COMMENT='账号表';
