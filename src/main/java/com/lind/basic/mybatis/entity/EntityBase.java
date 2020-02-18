@@ -33,11 +33,11 @@ public abstract class EntityBase {
   /**
    * 添加时间自动填充.
    */
-  @CreatedOnFuncation
+  @CreateTimeFunction
   protected Timestamp createdOn;
   /**
    * 更新时间自动填充.
    */
-  @UpdatedOnFuncation
+  @UpdatedTimeFunction
   protected Timestamp updatedOn;
 }

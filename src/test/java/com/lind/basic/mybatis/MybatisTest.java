@@ -33,7 +33,6 @@ public class MybatisTest {
     UserInfo userInfo = UserInfo.builder()
         .name("lind")
         .email("test@sina.com")
-        .address(Address.builder().cityCode(1).districtCode(1).provinceCode(1).cityName("beijing").build())
         .build();
     Assert.assertEquals(1, userInfoMapper.insert(userInfo));
   }
