@@ -13,9 +13,9 @@ import org.springframework.test.context.ActiveProfiles;
  * H2数据库初始化.
  */
 @Configuration
-@ActiveProfiles("test")
+@ActiveProfiles("Test1")
 public class H2Mock {
-  @Value("${h2.dbName:test}")
+  @Value("${h2.dbName:Test1}")
   String dbName;
   @Value("${h2.dbSchema:db/schema.sql}")
   String dbSchema;

@@ -32,7 +32,7 @@ public class MybatisTest {
   public void insert() {
     UserInfo userInfo = UserInfo.builder()
         .name("lind")
-        .email("test@sina.com")
+        .email("Test1@sina.com")
         .build();
     Assert.assertEquals(1, userInfoMapper.insert(userInfo));
   }

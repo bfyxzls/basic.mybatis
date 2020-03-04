@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.core.injector.ISqlInjector;
 import com.baomidou.mybatisplus.extension.injector.LogicSqlInjector;
 import com.baomidou.mybatisplus.extension.plugins.OptimisticLockerInterceptor;
 import com.baomidou.mybatisplus.extension.plugins.PaginationInterceptor;
-import com.lind.basic.mybatis.interceptor.CreateUpdateInterceptor;
+import com.lind.basic.mybatis.interceptor.MybatisInterceptor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -29,8 +29,8 @@ public class MybatisPlusConfig {
    * @return
    */
   @Bean
-  public CreateUpdateInterceptor timeFullInterceptor() {
-    return new CreateUpdateInterceptor();
+  public MybatisInterceptor timeFullInterceptor() {
+    return new MybatisInterceptor();
   }
 
   /**

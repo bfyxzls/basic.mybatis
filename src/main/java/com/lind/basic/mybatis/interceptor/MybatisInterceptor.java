@@ -1,161 +1,131 @@
 package com.lind.basic.mybatis.interceptor;
 
+import com.baomidou.mybatisplus.extension.handlers.AbstractSqlParserHandler;
+import com.lind.basic.mybatis.entity.CreateByFunction;
+import com.lind.basic.mybatis.entity.CreateTimeFunction;
 import com.lind.basic.mybatis.entity.LoginUser;
-import com.lind.basic.mybatis.util.oConvertUtils;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.ibatis.binding.MapperMethod.ParamMap;
-import org.apache.ibatis.executor.Executor;
+import com.lind.basic.mybatis.entity.UpdatedByFunction;
+import com.lind.basic.mybatis.entity.UpdatedTimeFunction;
+import java.lang.reflect.Field;
+import java.sql.Timestamp;
+import java.util.Map;
+import java.util.Properties;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.experimental.Accessors;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.mapping.SqlCommandType;
-import org.apache.ibatis.plugin.*;
-import org.springframework.stereotype.Component;
-
-import java.lang.reflect.Field;
-import java.util.Date;
-import java.util.Properties;
+import org.apache.ibatis.plugin.Interceptor;
+import org.apache.ibatis.plugin.Intercepts;
+import org.apache.ibatis.plugin.Invocation;
+import org.apache.ibatis.plugin.Plugin;
+import org.apache.ibatis.plugin.Signature;
 
 /**
- * 其它框架里的拦截器 .
- *
- * @Date 2019-01-19
+ * 建立和更新信息填充拦截器，大叔自己实现的.
  */
-@Slf4j
-//@Component
-@Intercepts({@Signature(type = Executor.class, method = "update", args = {MappedStatement.class, Object.class})})
-public class MybatisInterceptor implements Interceptor {
+@EqualsAndHashCode(callSuper = true)
+@Data
+@Accessors(chain = true)
+@Intercepts( {@Signature(
+    type = org.apache.ibatis.executor.Executor.class,
+    method = "update",
+    args = {MappedStatement.class, Object.class})})
+public class MybatisInterceptor extends AbstractSqlParserHandler implements Interceptor {
 
-    @Override
-    public Object intercept(Invocation invocation) throws Throwable {
-        MappedStatement mappedStatement = (MappedStatement) invocation.getArgs()[0];
-        String sqlId = mappedStatement.getId();
-        log.debug("------sqlId------" + sqlId);
-        SqlCommandType sqlCommandType = mappedStatement.getSqlCommandType();
-        Object parameter = invocation.getArgs()[1];
-        log.debug("------sqlCommandType------" + sqlCommandType);
+  private Properties properties;
 
-        if (parameter == null) {
-            return invocation.proceed();
+  @Override
+  public Object intercept(Invocation invocation) throws Throwable {
+    MappedStatement mappedStatement = (MappedStatement) invocation.getArgs()[0];
+
+    // 获取 SQL 命令
+    SqlCommandType sqlCommandType = mappedStatement.getSqlCommandType();
+
+    // 获取参数
+    Object parameter = invocation.getArgs()[1];
+
+    // 获取私有成员变量
+    Field[] declaredFields = parameter.getClass().getDeclaredFields();
+    if (parameter.getClass().getSuperclass() != null) {
+      Field[] superField = parameter.getClass().getSuperclass().getDeclaredFields();
+      declaredFields = ArrayUtils.addAll(declaredFields, superField);
+    }
+    // 是否为mybatis plug
+    boolean isPlugUpdate = parameter.getClass().getDeclaredFields().length == 1
+        && parameter.getClass().getDeclaredFields()[0].getName().equals("serialVersionUID");
+
+    //兼容mybatis plus的update
+    if (isPlugUpdate) {
+      Map<String, Object> updateParam = (Map<String, Object>) parameter;
+      Class<?> updateParamType = updateParam.get("param1").getClass();
+      declaredFields = updateParamType.getDeclaredFields();
+      if (updateParamType.getSuperclass() != null) {
+        Field[] superField = updateParamType.getSuperclass().getDeclaredFields();
+        declaredFields = ArrayUtils.addAll(declaredFields, superField);
+      }
+    }
+    for (Field field : declaredFields) {
+
+      // insert
+      if (SqlCommandType.INSERT.equals(sqlCommandType)) {
+        if (field.getAnnotation(CreateTimeFunction.class) != null) {
+          field.setAccessible(true);
+          field.set(parameter, new Timestamp(System.currentTimeMillis()));
         }
-        if (SqlCommandType.INSERT == sqlCommandType) {
-            LoginUser sysUser = this.getLoginUser();
-            Field[] fields = oConvertUtils.getAllFields(parameter);
-            for (Field field : fields) {
-                log.debug("------field.name------" + field.getName());
-                try {
-                    if ("createBy".equals(field.getName())) {
-                        field.setAccessible(true);
-                        Object local_createBy = field.get(parameter);
-                        field.setAccessible(false);
-                        if (local_createBy == null || local_createBy.equals("")) {
-                            if (sysUser != null) {
-                                // 登录人账号
-                                field.setAccessible(true);
-                                field.set(parameter, sysUser.getUsername());
-                                field.setAccessible(false);
-                            }
-                        }
-                    }
-                    // 注入创建时间
-                    if ("createTime".equals(field.getName())) {
-                        field.setAccessible(true);
-                        Object local_createDate = field.get(parameter);
-                        field.setAccessible(false);
-                        if (local_createDate == null || local_createDate.equals("")) {
-                            field.setAccessible(true);
-                            field.set(parameter, new Date());
-                            field.setAccessible(false);
-                        }
-                    }
-                    //注入部门编码
-                    if ("sysOrgCode".equals(field.getName())) {
-                        field.setAccessible(true);
-                        Object local_sysOrgCode = field.get(parameter);
-                        field.setAccessible(false);
-                        if (local_sysOrgCode == null || local_sysOrgCode.equals("")) {
-                            // 获取登录用户信息
-                            if (sysUser != null) {
-                                field.setAccessible(true);
-                                field.set(parameter, sysUser.getOrgCode());
-                                field.setAccessible(false);
-                            }
-                        }
-                    }
-                } catch (Exception e) {
-                }
-            }
+
+        if (field.getAnnotation(CreateByFunction.class) != null) {
+          field.setAccessible(true);
+          field.set(parameter, getLoginUser().getUsername());
         }
-        if (SqlCommandType.UPDATE == sqlCommandType) {
-            LoginUser sysUser = this.getLoginUser();
-            Field[] fields = null;
-            if (parameter instanceof ParamMap) {
-                ParamMap<?> p = (ParamMap<?>) parameter;
-                //update-begin-author:scott date:20190729 for:批量更新报错issues/IZA3Q--
-                if (p.containsKey("et")) {
-                    parameter = p.get("et");
-                } else {
-                    parameter = p.get("param1");
-                }
-                //update-end-author:scott date:20190729 for:批量更新报错issues/IZA3Q-
+      }
 
-                //update-begin-author:scott date:20190729 for:更新指定字段时报错 issues/#516-
-                if (parameter == null) {
-                    return invocation.proceed();
-                }
-                //update-end-author:scott date:20190729 for:更新指定字段时报错 issues/#516-
 
-                fields = oConvertUtils.getAllFields(parameter);
-            } else {
-                fields = oConvertUtils.getAllFields(parameter);
-            }
-
-            for (Field field : fields) {
-                log.debug("------field.name------" + field.getName());
-                try {
-                    if ("updateBy".equals(field.getName())) {
-                        //获取登录用户信息
-                        if (sysUser != null) {
-                            // 登录账号
-                            field.setAccessible(true);
-                            field.set(parameter, sysUser.getUsername());
-                            field.setAccessible(false);
-                        }
-                    }
-                    if ("updateTime".equals(field.getName())) {
-                        field.setAccessible(true);
-                        field.set(parameter, new Date());
-                        field.setAccessible(false);
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
+      // insert or update
+      if (SqlCommandType.INSERT.equals(sqlCommandType)
+          || SqlCommandType.UPDATE.equals(sqlCommandType)) {
+        field.setAccessible(true);
+        if (field.getAnnotation(UpdatedTimeFunction.class) != null) {
+          //兼容mybatis plus的update
+          if (isPlugUpdate) {
+            Map<String, Object> updateParam = (Map<String, Object>) parameter;
+            field.set(updateParam.get("param1"), new Timestamp(System.currentTimeMillis()));
+          } else {
+            field.set(parameter, new Timestamp(System.currentTimeMillis()));
+          }
         }
-        return invocation.proceed();
+        if (field.getAnnotation(UpdatedByFunction.class) != null) {
+          field.setAccessible(true);
+          field.set(parameter, getLoginUser().getUsername());
+        }
+      }
     }
 
-    @Override
-    public Object plugin(Object target) {
-        return Plugin.wrap(target, this);
+    return invocation.proceed();
+  }
+
+  @Override
+  public Object plugin(Object target) {
+    if (target instanceof org.apache.ibatis.executor.Executor) {
+      return Plugin.wrap(target, this);
     }
+    return target;
+  }
 
-    @Override
-    public void setProperties(Properties properties) {
-        // TODO Auto-generated method stub
+  @Override
+  public void setProperties(Properties prop) {
+    this.properties = prop;
+  }
+
+  private LoginUser getLoginUser() {
+    LoginUser sysUser = null;
+    try {
+      sysUser = new LoginUser();
+    } catch (Exception e) {
+      //e.printStackTrace();
+      sysUser = null;
     }
-
-    //update-begin--Author:scott  Date:20191213 for：关于使用Quzrtz 开启线程任务， #465
-    private LoginUser getLoginUser() {
-        LoginUser sysUser = null;
-        try {
-            sysUser = new LoginUser();
-            sysUser.setUsername("test");
-
-        } catch (Exception e) {
-            //e.printStackTrace();
-            sysUser = null;
-        }
-        return sysUser;
-    }
-    //update-end--Author:scott  Date:20191213 for：关于使用Quzrtz 开启线程任务， #465
-
+    return sysUser;
+  }
 }
